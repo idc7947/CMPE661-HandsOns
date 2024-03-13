@@ -13,6 +13,20 @@ int gf_degree(uint32_t element);
 uint32_t gf_mult(uint32_t a, uint32_t b);
 void find_generators(void);
 uint32_t verify_operations(void);
+void printTableForMultiplier(uint32_t multiplier);
+
+void printTableForMultiplier(uint32_t multiplier) {
+    printf("// Multiplication LUT for 0x%02x or {%02x}\n", multiplier, multiplier);
+    printf("const unsigned char xTime%02x[256] = {\n", multiplier);
+    for (int i = 0; i < 256; ++i) {
+        uint32_t result = gf_mult(i, multiplier);
+        printf("0x%02x", result);
+        if (i < 255) printf(", ");
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    printf("};\n\n");
+}
+
 
 // Addition in GF(2^8) is just XOR
 uint32_t gf_add(uint32_t a, uint32_t b) {
@@ -47,33 +61,7 @@ uint32_t gf_inv(uint32_t element) {
         s = s % 256;
         shamt = gf_degree(element) - gf_degree(n);
     }
-    /*
-    uint32_t r0 = element, r1 = FofX;
-    uint32_t s0 = 1, s1 = 0;
-    uint32_t q, temp;
 
-    while (r0 != 0) {
-        printf("InvLoop! %u\r\n", r0);
-        q = gf_div(r1, r0); // Replace direct division with the gf_div function.
-
-        // Calculate the new remainder
-        temp = r0;
-        r0 = gf_add(r1, gf_mult(q, r0));
-        r1 = temp;
-
-        // Calculate the new coefficient for num
-        temp = s0;
-        s0 = gf_add(s1, gf_mult(q, s0));
-        s1 = temp;
-    }
-
-    // When r0 reaches 0, the last non-zero remainder is in r1, which should be 1 if num is invertible
-    // The multiplicative inverse is the last non-zero coefficient stored in s1
-    if (r1 != 1) {
-        // This means that num and MODULUS are not relatively prime, and num has no inverse.
-        printf("r1 != 1\r\n");
-    }
-    */
 
     return s;
 }
@@ -194,13 +182,16 @@ void find_generators() {
 
 int main() {
     //init_platform();
+    printTableForMultiplier(2);
+    printTableForMultiplier(3);
+    printTableForMultiplier(9);
+    printTableForMultiplier(11);
+    printTableForMultiplier(13);
+    printTableForMultiplier(14);
+
 
     
-
-
     
-
-    verify_operations();
     //find_generators();
 
     //cleanup_platform();
