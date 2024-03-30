@@ -6,18 +6,18 @@
 
 
 // Addition in GF(2^8) is just XOR
-uint32_t gf_add(uint32_t a, uint32_t b) {
+uint8_t gf_add(uint8_t a, uint8_t b) {
     return a ^ b;
 }
 
-uint32_t gf_inv(uint32_t element) {
+uint8_t gf_inv(uint8_t element) {
     if (element == 0) {
         // 0 doesn't have an inverse in a multiplicative group.
         return 0;
     }
     uint32_t n = FofX, s = 1, t = 0;
     int32_t shamt = gf_degree(element) - 8;
-    uint32_t temp;
+    uint8_t temp;
 
     while (element != 1) {
         //printf("divloop! %u\r\n", element);
@@ -43,16 +43,16 @@ uint32_t gf_inv(uint32_t element) {
     return s;
 }
 
-uint32_t gf_div(uint32_t dividend, uint32_t divisor) {
+uint8_t gf_div(uint8_t dividend, uint8_t divisor) {
     if (divisor == 0) {
         exit(99);
     }
     
-    uint32_t remainder = dividend;  // Start with the dividend as the remainder
-    uint32_t deg_rem = gf_degree(remainder);
-    uint32_t deg_div = gf_degree(divisor);
-    uint32_t deg_diff = deg_rem - deg_div; 
-    uint32_t result = 0;
+    uint8_t remainder = dividend;  // Start with the dividend as the remainder
+    uint8_t deg_rem = gf_degree(remainder);
+    uint8_t deg_div = gf_degree(divisor);
+    uint8_t deg_diff = deg_rem - deg_div; 
+    uint8_t result = 0;
 
     while(deg_rem >= deg_div) {
         remainder = gf_add(remainder, (divisor << deg_diff)); // Add and Sub are the same in GF
@@ -65,7 +65,7 @@ uint32_t gf_div(uint32_t dividend, uint32_t divisor) {
 }
 
 // Helper function to calculate the degree (the position of the highest bit set) of an element.
-int gf_degree(uint32_t element) {
+int gf_degree(uint8_t element) {
     element >>= 1;
     int degree = 0;  // Start with -1, which represents an element of 0.
     while (element) {
@@ -77,23 +77,25 @@ int gf_degree(uint32_t element) {
 
 
 // Multiplication in GF(2^8), with reduction by the irreducible polynomial
-uint32_t gf_mult(uint32_t a, uint32_t b) {
+uint8_t gf_mult(uint8_t a, uint8_t b) {
+    uint32_t a_32 = (uint32_t) a;
+    uint32_t b_32 = (uint32_t) b;
     uint32_t product = 0;
-    uint32_t power;
-    uint32_t x8_reduce;  // You only need to add f(x) if the high term (in this case x^8) is present
+    uint8_t power;
+    uint8_t x8_reduce;  // You only need to add f(x) if the high term (in this case x^8) is present
     for (power = 0; power < 8; power++) {
-        if (b & 0b00000001) {
-			product ^= a;    // product += a(x) * (next term of b(x))
+        if (b_32 & 0b00000001) {
+			product ^= a_32;    // product += a(x) * (next term of b(x))
 		}
-        x8_reduce = a & 0b10000000; // we know we need to reduce because the x^7 term is present
+        x8_reduce = a_32 & 0b10000000; // we know we need to reduce because the x^7 term is present
 		// shift values of a to the left, effectively multiplying a(x) by x
-        a <<= 1;  // note: this effectively pre-multiplies the a variable if the next loop's b term is set
+        a_32 <<= 1;  // note: this effectively pre-multiplies the a variable if the next loop's b term is set
         if (x8_reduce) {
-			a ^= FofX; // add f(x) if x8 present
+			a_32 ^= FofX; // add f(x) if x8 present
 		}
-        b >>= 1; // Shift b right to eval next term in b(x)
+        b_32 >>= 1; // Shift b right to eval next term in b(x)
     }
-    return product;
+    return (uint8_t) product;
 }
 
 
@@ -104,9 +106,9 @@ A generator is an element 'g' such that every non-zero element of the field can 
 void find_generators() {
 	uint16_t gen_count = 0;
 	// Outer loop will go through all elements of GF(2^8) except 0, as it can't be a generator
-    for (uint32_t i = 1; i < 256; i++) {
-		uint32_t powers[256] = {0}; 		// This array will keep track of all the "powers" we have seen (x^1 -> x^255)
-        uint32_t a = i;							
+    for (uint8_t i = 1; i < 256; i++) {
+		uint8_t powers[256] = {0}; 		// This array will keep track of all the "powers" we have seen (x^1 -> x^255)
+        uint8_t a = i;							
         int is_generator = 1;
         for (int j = 0; j < 255; j++) { 	// Multiplying element 'i' by itself to generate all its powers
             a = gf_mult(a, i);			// a = i^j

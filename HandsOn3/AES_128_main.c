@@ -11,16 +11,16 @@
 
 //============================================================================
 
-uint32_t StateArray [4][4];
-uint32_t ExpandedKey[11][4][4];
+uint8_t StateArray [4][4];
+uint8_t ExpandedKey[11][4][4];
 //    W0    W1    W2    W3
-uint32_t Key[4][4]        = {  {0x2b, 0x28, 0xab, 0x09},
+uint8_t Key[4][4]        = {  {0x2b, 0x28, 0xab, 0x09},
 		{0x7e, 0xae, 0xf7, 0xcf},
 		{0x15, 0xd2, 0x15, 0x4f},
 		{0x16, 0xa6, 0x88, 0x3c} };
 
 //    W0    W1    W2    W3
-uint32_t PlainText[4][4]  = {  {0x32, 0x88, 0x31, 0xe0},
+uint8_t PlainText[4][4]  = {  {0x32, 0x88, 0x31, 0xe0},
 		{0x43, 0x5a, 0x31, 0x37},
 		{0xf6, 0x30, 0x98, 0x07},
 		{0xa8, 0x8d, 0xa2, 0x34} };
@@ -28,6 +28,7 @@ uint32_t PlainText[4][4]  = {  {0x32, 0x88, 0x31, 0xe0},
 // The function prototype is void * memset(void *dest, int c, size_t count);
 
 void encrypt();
+void encryptNoBullshit();
 void decrypt();
 
 int main()
@@ -37,21 +38,9 @@ int main()
 	xil_printf("\n\n\n");
 	xil_printf("-- Starting AES software test based on FIPS-197 (Appendix B)\r\n\n");
 
-	//--------------------------------------------
-	//-----Encrypt Function-----------------------
-	//--------------------------------------------
-
-	encrypt();
-
-	//--------------------------------------------
-	//-----Decrypt Function-----------------------
-	//--------------------------------------------
+	encryptNoBullshit();
 
 	//decrypt();
-
-	//--------------------------------------------
-	//-----Display Results------------------------
-	//--------------------------------------------
 
 	xil_printf("**********************************************\r\n");
 
@@ -59,6 +48,25 @@ int main()
 	//cleanup_platform();
 
 	return 0;
+}
+
+void encryptNoBullshit() {
+	ExpandKey(Key, ExpandedKey);
+	memcpy(StateArray, PlainText, 4 * 4 * sizeof(uint8_t));
+	AddRoundKey(ExpandedKey[0], StateArray);
+	for(int i=1; i<=10; i++){
+		#ifdef SBOX_LUT
+		SubBytes(StateArray);
+		#else
+		SubBytesCalculated(StateArray);
+		#endif
+		ShiftRows(StateArray);
+		if(i!=10){
+			MixColumns(StateArray);
+		}
+		AddRoundKey(ExpandedKey[i], StateArray);
+	}
+	AES_printf(StateArray);
 }
 
 void encrypt(){
@@ -84,7 +92,7 @@ void encrypt(){
 
 	long int x;
 	for(x=0; x<1; x++){
-		memcpy(StateArray, PlainText, 4 * 4 * sizeof(uint32_t));
+		memcpy(StateArray, PlainText, 4 * 4 * sizeof(uint8_t));
 
 #if (AES_PRINT & AES_PRINT_DETAILS)
 		xil_printf("-- Test State - Start of Round 0 \r\n\n");
@@ -121,23 +129,23 @@ void encrypt(){
 
 			if(i!=10){
 				MixColumns(StateArray);
-				/* 
+				 
 #if (AES_PRINT & AES_PRINT_DETAILS)
 				xil_printf("-- Test State - Round %d after MixColumns \r\n\n",i);
 				AES_printf(StateArray);
 				xil_printf("---------------------\r\n\n");
 #endif
-*/
+
 			}
 
 			AddRoundKey(ExpandedKey[i], StateArray);
-			/*
+			
 #if (AES_PRINT & AES_PRINT_DETAILS)
 			xil_printf("-- Test State - End of Round %d \r\n\n",i);
 			AES_printf(StateArray);
 			xil_printf("---------------------\r\n\n");
 #endif
-*/
+
 		}
 	}
 #if (AES_PRINT & AES_PRINT_MAIN)
@@ -149,8 +157,8 @@ void encrypt(){
 }
 
 void decrypt() {
-	uint32_t Ciphertext[4][4];
-	memcpy(Ciphertext, StateArray, 4 * 4 * sizeof(uint32_t));
+	uint8_t Ciphertext[4][4];
+	memcpy(Ciphertext, StateArray, 4 * 4 * sizeof(uint8_t));
 #if (AES_PRINT & AES_PRINT_MAIN)
 	xil_printf("-- Starting Decryption \r\n\n");
 #endif
@@ -172,7 +180,7 @@ void decrypt() {
     xil_printf("-- Starting Decryption \r\n\n");
 #endif
 
-    memcpy(StateArray, Ciphertext, 4 * 4 * sizeof(uint32_t));
+    memcpy(StateArray, Ciphertext, 4 * 4 * sizeof(uint8_t));
 
     // Initial round
     AddRoundKey(ExpandedKey[10], StateArray);

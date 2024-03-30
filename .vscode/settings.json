@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "aes_128.h": "c"
+        "aes_128.h": "c",
+        "strings.h": "c"
     }
 }

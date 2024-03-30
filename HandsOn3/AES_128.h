@@ -29,31 +29,31 @@
  * Functions for key expansion
  *********************************************************************/
 
-void ExpandKey (uint32_t Key[][4], uint32_t ExpandedKey[][4][4]);
-void AddRoundKey (uint32_t Key[][4], uint32_t StateArray[][4]);
+void ExpandKey (uint8_t Key[][4], uint8_t ExpandedKey[][4][4]);
+void AddRoundKey (uint8_t Key[][4], uint8_t StateArray[][4]);
 
 /**********************************************************************
  * Functions for AES encryption
  **********************************************************************/
 
-void SubBytes (uint32_t StateArray[][4]);
-void ShiftRows (uint32_t StateArray[][4]);
-void MixColumns (uint32_t StateArray[][4]);
-
-void SubBytesCalculated (uint32_t StateArray[][4]);
+void SubBytes (uint8_t StateArray[][4]);
+void ShiftRows (uint8_t StateArray[][4]);
+void MixColumns (uint8_t StateArray[][4]);
+uint8_t affine_transform(uint8_t byte);
+void SubBytesCalculated (uint8_t StateArray[][4]);
 
 /**********************************************************************
  * Functions for AES decryption
  **********************************************************************/
  
-void InvSubBytes (uint32_t StateArray[][4]);
-void InvShiftRows (uint32_t StateArray[][4]);
-void InvMixColumns (uint32_t StateArray[][4]);
+void InvSubBytes (uint8_t StateArray[][4]);
+void InvShiftRows (uint8_t StateArray[][4]);
+void InvMixColumns (uint8_t StateArray[][4]);
  
 /**********************************************************************
  * Miscellaneous Functions 
  **********************************************************************/
 
-void AES_printf (uint32_t StateArray[][4]);
+void AES_printf (uint8_t StateArray[][4]);
 
 #endif /* AES_128_H_ */

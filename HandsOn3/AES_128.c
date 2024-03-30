@@ -1,9 +1,12 @@
 
 #include "AES_128.h"
 #include "gf28.h"
+//#define SBOX_LUT
+//#define MCOL_LUT
+//#define TBOX_LUT
 #include "multiplication_tables.c"
 
-const uint32_t SBox[256] = {
+const uint8_t SBox[256] = {
  // 0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
  0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,   //0
  0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,   //1
@@ -22,7 +25,7 @@ const uint32_t SBox[256] = {
  0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,   //E
  0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 }; //F
 
-const uint32_t InvSBox[256] = {
+const uint8_t InvSBox[256] = {
  // 0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
  0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,   //0
  0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,   //1
@@ -45,7 +48,7 @@ const uint32_t InvSBox[256] = {
 
 
 
-const uint32_t RCon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
+const uint8_t RCon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
 
 //#define xTime(x) ((x<<1) ^ ((x & 0x080) ? 0x1b : 0x00))
 //#define xTime(x) ((((x)&0xFF)<<1) ^ (((x) & 0x80) ? 0x1b : 0x00))
@@ -54,18 +57,18 @@ const uint32_t RCon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b,
 /**********************************************************************
  * Functions for key expansion
  *********************************************************************/
-void ExpandKey (uint32_t Key[][4], uint32_t ExpandedKey[][4][4])
+void ExpandKey (uint8_t Key[][4], uint8_t ExpandedKey[][4][4])
 {
-	uint32_t TempKey[4][4];
-	memset(&TempKey, 0, 4*4*sizeof (uint32_t));
-	//bzero(TempKey, 4*4*sizeof (uint32_t));
-	uint32_t TempKeyCol[4];
-	memset(&TempKeyCol, 0, 4*sizeof (uint32_t));
-	//bzero(TempKeyCol, 4*sizeof (uint32_t));
+	uint8_t TempKey[4][4];
+	memset(&TempKey, 0, 4*4*sizeof (uint8_t));
+	//bzero(TempKey, 4*4*sizeof (uint8_t));
+	uint8_t TempKeyCol[4];
+	memset(&TempKeyCol, 0, 4*sizeof (uint8_t));
+	//bzero(TempKeyCol, 4*sizeof (uint8_t));
 	int i,j;
 
 	// Encryption Key copied to Expanded Key [0]
-	memcpy(ExpandedKey[0], Key, 4 * 4 * sizeof(uint32_t));
+	memcpy(ExpandedKey[0], Key, 4 * 4 * sizeof(uint8_t));
 
 	for (i=1; i<11; i++){
 		// W3 copied to TempKeyRow with rotation
@@ -75,11 +78,19 @@ void ExpandKey (uint32_t Key[][4], uint32_t ExpandedKey[][4][4])
 		TempKeyCol[3]=ExpandedKey[i-1][0][3];
 
 		// sBox applied
+		//#ifdef SBOX_LUT
 		TempKeyCol[0]=SBox[ TempKeyCol[0] ];
 		TempKeyCol[1]=SBox[ TempKeyCol[1] ];
 		TempKeyCol[2]=SBox[ TempKeyCol[2] ];
 		TempKeyCol[3]=SBox[ TempKeyCol[3] ];
-
+		//#else 
+		/*
+		TempKeyCol[0]= affine_transform( TempKeyCol[0] );
+		TempKeyCol[1]= affine_transform( TempKeyCol[1] );
+		TempKeyCol[2]= affine_transform( TempKeyCol[2] );
+		TempKeyCol[3]= affine_transform( TempKeyCol[3] );
+		*/
+		//#endif
 		// Rcon applied
 		TempKeyCol[0]^=RCon[i-1];
 
@@ -98,7 +109,7 @@ void ExpandKey (uint32_t Key[][4], uint32_t ExpandedKey[][4][4])
 	}
 }
 
-void AddRoundKey (uint32_t Key[][4], uint32_t StateArray[][4])
+void AddRoundKey (uint8_t Key[][4], uint8_t StateArray[][4])
 {
 	int i,j;
 	for(i=0; i<4; i++)
@@ -110,7 +121,7 @@ void AddRoundKey (uint32_t Key[][4], uint32_t StateArray[][4])
  * Functions for AES encryptoin
  **********************************************************************/
  
-void SubBytes (uint32_t StateArray[][4])
+void SubBytes (uint8_t StateArray[][4])
 {
 	int i,j;
 	for(i=0; i<4; i++)
@@ -119,9 +130,9 @@ void SubBytes (uint32_t StateArray[][4])
 }
 
 
-void ShiftRows (uint32_t StateArray[][4])
+void ShiftRows (uint8_t StateArray[][4])
 {
-	uint32_t x;
+	uint8_t x;
 	// Row#1 - rotate 1 column to the left
 	x = StateArray[1][0];
 	StateArray[1][0] = StateArray[1][1];
@@ -143,12 +154,13 @@ void ShiftRows (uint32_t StateArray[][4])
 	StateArray[3][0] = x;
 }
 
-void MixColumns (uint32_t StateArray[][4])
+void MixColumns (uint8_t StateArray[][4])
 {
 	int i;
-	uint32_t StateArrayTmp[4][4];
+	uint8_t StateArrayTmp[4][4];
 
 	for (i = 0; i < 4; i++) { // Iterate over each column
+		#ifdef MCOL_LUT
         StateArrayTmp[0][i] = 
             xTime02[StateArray[0][i]] ^ xTime03[StateArray[1][i]] ^
             StateArray[2][i] ^ StateArray[3][i];
@@ -161,57 +173,59 @@ void MixColumns (uint32_t StateArray[][4])
         StateArrayTmp[3][i] = 
             xTime03[StateArray[0][i]] ^ StateArray[1][i] ^
             StateArray[2][i] ^ xTime02[StateArray[3][i]];
+		#else
+		StateArrayTmp[0][i] = 
+            (gf_mult(0x02, StateArray[0][i])) ^ (gf_mult(0x03, StateArray[1][i])) ^
+            (StateArray[2][i]) ^ (StateArray[3][i]);
+        StateArrayTmp[1][i] = 
+            (StateArray[0][i]) ^ gf_mult(0x02,StateArray[1][i]) ^
+            (gf_mult(0x03, StateArray[2][i])) ^ (StateArray[3][i]);
+        StateArrayTmp[2][i] = 
+            (StateArray[0][i]) ^ (StateArray[1][i]) ^
+            (gf_mult(0x02, StateArray[2][i])) ^ (gf_mult(0x03, StateArray[3][i]));
+        StateArrayTmp[3][i] = 
+            (gf_mult(0x03, StateArray[0][i])) ^ (StateArray[1][i]) ^
+            (StateArray[2][i]) ^ (gf_mult(0x02, StateArray[3][i]));
+		#endif 
     }
 
-	memcpy(StateArray, StateArrayTmp, 4 * 4 * sizeof(uint32_t));
+	memcpy(StateArray, StateArrayTmp, 4 * 4 * sizeof(uint8_t));
 }
-
-
-/**********************************************************************
- * Functions for Sbox calculation
- **********************************************************************/
 
 /*
  * This function calculates the SBox value on the fly rather than using the table and performing a lookup
  */
-
-void SubBytesCalculated (uint32_t StateArray[][4])
-{	
-    uint32_t constant_c = 0x63;  // Constant for affine transformation
-
+void SubBytesCalculated (uint8_t StateArray[][4]) {
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
-            uint32_t inv = gf_inv(StateArray[i][j]);
-
-            // Apply the affine transformation.
-            uint32_t s_box_value = 0;
-            for (int k = 0; k < 8; ++k) {
-                // Calculate each bit of the S-Box value.
-                uint32_t bit = (inv >> k) & 0x01;  // Isolate the bit.
-                // Rotate through all the other bits and XOR them together as defined in the transformation.
-                for (int l = 1; l <= 4; ++l) {
-                    bit ^= (inv >> ((k + l) % 8)) & 0x01;
-                }
-                bit ^= (constant_c >> k) & 0x01;  // Apply the constant.
-
-                // Combine the bit into the S-Box value.
-                s_box_value |= (bit << k);
+            if (StateArray[i][j] == 0) {
+                StateArray[i][j] = 0x63;  // Directly use SBox[0] for 0 input
+            } else {
+                uint8_t inv = gf_inv(StateArray[i][j]);
+                StateArray[i][j] = affine_transform(inv);
             }
-
-            // Place the transformed byte back into the state array.
-            StateArray[i][j] = s_box_value;
         }
     }
 }
 
+uint8_t affine_transform(uint8_t byte) {
+    uint8_t constant_c = 0x63;  // Constant for affine transformation
+    uint8_t result = 0;
 
-/**********************************************************************
- * Functions for AES decryption
- **********************************************************************/
- // use roundkey10 for first
+    for (int i = 0; i < 8; ++i) {
+        result |= (((byte >> i) & 1) ^
+                   ((byte >> ((i+4) % 8)) & 1) ^
+                   ((byte >> ((i+5) % 8)) & 1) ^
+                   ((byte >> ((i+6) % 8)) & 1) ^
+                   ((byte >> ((i+7) % 8)) & 1) ^
+                   ((constant_c >> i) & 1)) << i;
+    }
+
+    return result;
+}
 
 
- void InvSubBytes (uint32_t StateArray[][4])
+ void InvSubBytes (uint8_t StateArray[][4])
 {
 	int i,j;
 	for (i = 0; i < 4; i++) {
@@ -221,9 +235,9 @@ void SubBytesCalculated (uint32_t StateArray[][4])
 	}
 }
 
-void InvShiftRows (uint32_t StateArray[][4])
+void InvShiftRows (uint8_t StateArray[][4])
 {
-    uint32_t x;
+    uint8_t x;
     // Row#1 - rotate 1 column to the right
     x = StateArray[1][3];
     StateArray[1][3] = StateArray[1][2];
@@ -247,10 +261,10 @@ void InvShiftRows (uint32_t StateArray[][4])
     StateArray[3][3] = x;
 }
 
-void InvMixColumns (uint32_t StateArray[][4])
+void InvMixColumns (uint8_t StateArray[][4])
 {
     int i;
-    uint32_t StateArrayTmp[4][4];
+    uint8_t StateArrayTmp[4][4];
 
     for (i = 0; i < 4; i++) {
         StateArrayTmp[0][i] = 
@@ -267,14 +281,11 @@ void InvMixColumns (uint32_t StateArray[][4])
             xTime09[StateArray[2][i]] ^ xTime0e[StateArray[3][i]];
     }
 
-	memcpy(StateArray, StateArrayTmp, 4 * 4 * sizeof(uint32_t));
+	memcpy(StateArray, StateArrayTmp, 4 * 4 * sizeof(uint8_t));
 }
 
-/**********************************************************************
- * Miscellaneous Functions 
- **********************************************************************/
 
-void AES_printf (uint32_t AES_StateArray[][4])
+void AES_printf (uint8_t AES_StateArray[][4])
 {
 	int i;
 	xil_printf("   W0  W1  W2  W3\r\n\n");

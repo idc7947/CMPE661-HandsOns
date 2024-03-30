@@ -40,33 +40,33 @@
  *********************************************************************/
 
 void ExpandKey1D(uint32_t Key[4], uint32_t ExpandedKey[][4]);
-void AddRoundKey1D(uint32_t RoundKey[4], uint32_t StateArray[4]);
-void ExpandKey (uint32_t Key[][4], uint32_t ExpandedKey[][4][4]);
-void AddRoundKey (uint32_t Key[][4], uint32_t StateArray[][4]);
+void AddRoundKey1D(uint32_t Key[4], uint32_t StateArray[4]);
+void ExpandKey (uint8_t Key[][4], uint8_t ExpandedKey[][4][4]);
+void AddRoundKey (uint8_t Key[][4], uint8_t StateArray[][4]);
 
 /**********************************************************************
  * Functions for AES encryption
  **********************************************************************/
 
-void collapse_to_1D(uint32_t src[4][4], uint32_t dst[4]);
+void collapse_to_1D(uint8_t src[4][4], uint32_t dst[4]);
 void SubBytesAndShiftRows1D(uint32_t *state);
 void MixColumns1D(uint32_t *state);
-void AddRoundKey1D(uint32_t *roundKey, uint32_t *state);
-void expand_to_2D(uint32_t src[4], uint32_t dst[4][4]);
+void AddRoundKey1D(uint32_t Key[4], uint32_t StateArray[4]);
+void expand_to_2D(uint32_t src[4], uint8_t dst[4][4]);
 
 /**********************************************************************
  * Functions for AES decryption
  **********************************************************************/
  
-void InvSubBytes (uint32_t StateArray[][4]);
-void InvShiftRows (uint32_t StateArray[][4]);
-void InvMixColumns (uint32_t StateArray[][4]);
+void InvSubBytes (uint8_t StateArray[][4]);
+void InvShiftRows (uint8_t StateArray[][4]);
+void InvMixColumns (uint8_t StateArray[][4]);
  
 /**********************************************************************
  * Miscellaneous Functions 
  **********************************************************************/
 
-void AES_printf (uint32_t StateArray[][4]);
+void AES_printf (uint8_t StateArray[][4]);
 
 
 

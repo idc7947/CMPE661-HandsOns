@@ -7,9 +7,9 @@
 #define FofX 0x11B
 
 
-uint32_t gf_add(uint32_t a, uint32_t b);
-uint32_t gf_inv(uint32_t element);
-uint32_t gf_div(uint32_t dividend, uint32_t divisor);
-int gf_degree(uint32_t element);
-uint32_t gf_mult(uint32_t a, uint32_t b);
+uint8_t gf_add(uint8_t a, uint8_t b);
+uint8_t gf_inv(uint8_t element);
+uint8_t gf_div(uint8_t dividend, uint8_t divisor);
+int gf_degree(uint8_t element);
+uint8_t gf_mult(uint8_t a, uint8_t b);
 void find_generators(void);
