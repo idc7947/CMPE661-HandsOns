@@ -7,12 +7,13 @@
 //#include "xparameters.h"
 //#include "platform.h"
 
-#include "AES_128.h"
+#include "AES_128_1D.h"
 
 //============================================================================
 
 uint32_t StateArray [4][4];
 uint32_t ExpandedKey[11][4][4];
+uint32_t ExpandedKey1D[11][4];
 //    W0    W1    W2    W3
 uint32_t Key[4][4]        = {  {0x2b, 0x28, 0xab, 0x09},
 		{0x7e, 0xae, 0xf7, 0xcf},
@@ -61,92 +62,67 @@ int main()
 	return 0;
 }
 
-void encrypt(){
-#if (AES_PRINT & AES_PRINT_MAIN)
-	xil_printf("-- Test Encryption Key \r\n\n");
-	AES_printf(Key);
-	xil_printf("---------------------\r\n\n");
+void encrypt() {
+	uint32_t state[4]; // 1-D state array
+	uint32_t Key1D[4];
 
-	xil_printf("-- Test Plaintext \r\n\n");
-	AES_printf(PlainText);
-	xil_printf("---------------------\r\n\n");
-#endif
+    // Collapse the 2-D PlainText into a 1-D array
+    collapse_to_1D(PlainText, state);
+	// Same for the key
+	collapse_to_1D(Key, Key1D);
 
 #if (AES_PRINT & AES_PRINT_MAIN)
-	xil_printf("-- Starting Key Expansion \r\n\n");
+    xil_printf("-- Test Encryption Key \r\n\n");
+    AES_printf(Key);
+    xil_printf("---------------------\r\n\n");
+
+    xil_printf("-- Test Plaintext \r\n\n");
+    AES_printf(PlainText);
+    xil_printf("---------------------\r\n\n");
 #endif
 
-	ExpandKey(Key, ExpandedKey);
+    ExpandKey1D(Key1D, ExpandedKey1D);
+	
 
-#if (AES_PRINT & AES_PRINT_MAIN)
-	xil_printf("-- Starting Encryption \r\n\n");
-#endif
+    // Initial round key addition
+    AddRoundKey1D((uint32_t *)ExpandedKey[0], state);
 
-	long int x;
-	for(x=0; x<1; x++){
-		memcpy(StateArray, PlainText, 4 * 4 * sizeof(uint32_t));
-
-#if (AES_PRINT & AES_PRINT_DETAILS)
-		xil_printf("-- Test State - Start of Round 0 \r\n\n");
-		AES_printf(StateArray);
-		xil_printf("---------------------\r\n\n");
-#endif
-
-		AddRoundKey(ExpandedKey[0], StateArray);
-#if (AES_PRINT & AES_PRINT_DETAILS)
+	#if (AES_PRINT & AES_PRINT_DETAILS)
 		xil_printf("-- Test State - End of Round 0 \r\n\n");
+		expand_to_2D(state, StateArray);
 		AES_printf(StateArray);
 		xil_printf("---------------------\r\n\n");
 #endif
 
-		int i;
-
-		// Rounds
-		for(i=1; i<=10; i++){
-			SubBytes(StateArray);
-//			/*
-#if (AES_PRINT & AES_PRINT_DETAILS)
-			xil_printf("-- Test State - Round %d after SubBytes \r\n\n",i);
+    // Main rounds
+    for (int round = 1; round < 10; round++) {
+        SubBytesAndShiftRows1D(state); // Perform SubBytes and ShiftRows
+		#if (AES_PRINT & AES_PRINT_DETAILS)
+			xil_printf("-- Test State - Round %d after ShiftRows \r\n\n",round);
+			expand_to_2D(state, StateArray);
 			AES_printf(StateArray);
 			xil_printf("---------------------\r\n\n");
 #endif
-//*/
-			ShiftRows(StateArray);
-#if (AES_PRINT & AES_PRINT_DETAILS)
-			xil_printf("-- Test State - Round %d after ShiftRows \r\n\n",i);
-			AES_printf(StateArray);
-			xil_printf("---------------------\r\n\n");
-#endif
+        MixColumns1D(state);           // Perform MixColumns
+        AddRoundKey1D((uint32_t *)ExpandedKey[round], state); // AddRoundKey
+    }
 
+    // Final round (without MixColumns)
+    SubBytesAndShiftRows1D(state); // Perform SubBytes and ShiftRows
+    AddRoundKey1D((uint32_t *)ExpandedKey[10], state); // AddRoundKey for the final round
 
-			if(i!=10){
-				MixColumns(StateArray);
-				/* 
-#if (AES_PRINT & AES_PRINT_DETAILS)
-				xil_printf("-- Test State - Round %d after MixColumns \r\n\n",i);
-				AES_printf(StateArray);
-				xil_printf("---------------------\r\n\n");
-#endif
-*/
-			}
+    // If you need to expand back to 2-D array for any reason (e.g., printing), do it here.
+    // Assuming 'expand_to_2D' is a function to convert a 1-D array back to a 2-D array.
+    expand_to_2D(state, StateArray);
 
-			AddRoundKey(ExpandedKey[i], StateArray);
-			/*
-#if (AES_PRINT & AES_PRINT_DETAILS)
-			xil_printf("-- Test State - End of Round %d \r\n\n",i);
-			AES_printf(StateArray);
-			xil_printf("---------------------\r\n\n");
-#endif
-*/
-		}
-	}
 #if (AES_PRINT & AES_PRINT_MAIN)
-	xil_printf("-- AES key expansion and encryption test completed. \r\n\n");
-	xil_printf("-- Test State - End \r\n\n");
-	AES_printf(StateArray);
-	xil_printf("--------------------\r\n\n");
+    xil_printf("-- Encryption Complete \r\n\n");
+    AES_printf(StateArray); // Print the encrypted state
+    xil_printf("---------------------\r\n\n");
 #endif
 }
+
+
 
 void decrypt() {
 	uint32_t Ciphertext[4][4];
