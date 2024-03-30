@@ -47,63 +47,7 @@ const uint8_t InvSBox[256] = {
 
 const uint8_t RCon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
 
-//#define xTime(x) ((x<<1) ^ ((x & 0x080) ? 0x1b : 0x00))
-//#define xTime(x) ((((x)&0xFF)<<1) ^ (((x) & 0x80) ? 0x1b : 0x00))
 
-/**********************************************************************
- * Functions for key expansion
- *********************************************************************/
-void ExpandKey (uint8_t Key[][4], uint8_t ExpandedKey[][4][4])
-{
-	uint8_t TempKey[4][4];
-	memset(&TempKey, 0, 4*4*sizeof (uint8_t));
-	//bzero(TempKey, 4*4*sizeof (uint8_t));
-	uint8_t TempKeyCol[4];
-	memset(&TempKeyCol, 0, 4*sizeof (uint8_t));
-	//bzero(TempKeyCol, 4*sizeof (uint8_t));
-	int i,j;
-
-	// Encryption Key copied to Expanded Key [0]
-	memcpy(ExpandedKey[0], Key, 4 * 4 * sizeof(uint8_t));
-
-	for (i=1; i<11; i++){
-		// W3 copied to TempKeyRow with rotation
-		TempKeyCol[0]=ExpandedKey[i-1][1][3];
-		TempKeyCol[1]=ExpandedKey[i-1][2][3];
-		TempKeyCol[2]=ExpandedKey[i-1][3][3];
-		TempKeyCol[3]=ExpandedKey[i-1][0][3];
-
-		// sBox applied
-		TempKeyCol[0]=SBox[ TempKeyCol[0] ];
-		TempKeyCol[1]=SBox[ TempKeyCol[1] ];
-		TempKeyCol[2]=SBox[ TempKeyCol[2] ];
-		TempKeyCol[3]=SBox[ TempKeyCol[3] ];
-
-		// Rcon applied
-		TempKeyCol[0]^=RCon[i-1];
-
-		// XOR
-		for(j=0; j<4; j++){
-			TempKeyCol[0] = TempKeyCol[0]^ExpandedKey[i-1][0][j];
-			TempKeyCol[1] = TempKeyCol[1]^ExpandedKey[i-1][1][j];
-			TempKeyCol[2] = TempKeyCol[2]^ExpandedKey[i-1][2][j];
-			TempKeyCol[3] = TempKeyCol[3]^ExpandedKey[i-1][3][j];
-
-			ExpandedKey[i][0][j] = TempKeyCol[0];
-			ExpandedKey[i][1][j] = TempKeyCol[1];
-			ExpandedKey[i][2][j] = TempKeyCol[2];
-			ExpandedKey[i][3][j] = TempKeyCol[3];
-		}
-	}
-}
-
-void AddRoundKey (uint8_t Key[][4], uint8_t StateArray[][4])
-{
-	int i,j;
-	for(i=0; i<4; i++)
-		for(j=0; j<4; j++)
-			StateArray[i][j] ^= Key[i][j];
-}
 
 void ExpandKey1D(uint32_t Key[4], uint32_t ExpandedKey[][4]) {
     int i, j;
@@ -122,10 +66,17 @@ void ExpandKey1D(uint32_t Key[4], uint32_t ExpandedKey[][4]) {
         rotated = (temp << 8) | (temp >> 24);
 
         // SubWord using SBox
+        #ifdef SBOX_LUT
         subWord = (uint32_t)(SBox[(rotated >> 24) & 0xFF] << 24) |
                   (uint32_t)(SBox[(rotated >> 16) & 0xFF] << 16) |
                   (uint32_t)(SBox[(rotated >> 8) & 0xFF] << 8) |
                   (uint32_t)(SBox[rotated & 0xFF]);
+        #else
+        subWord = (uint32_t)(affine_transform( (rotated >> 24) & 0xFF ) << 24) |
+                  (uint32_t)(affine_transform( (rotated >> 16) & 0xFF) << 16) |
+                  (uint32_t)(affine_transform( (rotated >> 8) & 0xFF) << 8) |
+                  (uint32_t)(affine_transform( rotated & 0xFF));
+        #endif
 
         // XOR with Rcon[i/Nk] (considering Nk=4 for AES-128)
         temp = subWord ^ (((uint32_t)RCon[i-1]) << 24);
@@ -178,16 +129,60 @@ void MixColumns1D(uint32_t *state) {
         uint8_t s2 = third(state[i]);
         uint8_t s3 = fourth(state[i]);
 
+        #ifdef MCOL_LUT
         temp[i] = toFirst((unsigned char)(xTime02[s0] ^ xTime03[s1] ^ s2 ^ s3)) ^
                   toSecond((unsigned char)(s0 ^ xTime02[s1] ^ xTime03[s2] ^ s3)) ^
                   toThird((unsigned char)(s0 ^ s1 ^ xTime02[s2] ^ xTime03[s3])) ^
                   toFourth((unsigned char)(xTime03[s0] ^ s1 ^ s2 ^ xTime02[s3]));
+        #else
+        temp[i] = toFirst((unsigned char)(gf_mult(0x02,s0) ^ gf_mult(0x03,s1) ^ s2 ^ s3)) ^
+                  toSecond((unsigned char)(s0 ^ gf_mult(0x02,s1) ^ gf_mult(0x03,s2) ^ s3)) ^
+                  toThird((unsigned char)(s0 ^ s1 ^ gf_mult(0x02,s2) ^ gf_mult(0x03,s3))) ^
+                  toFourth((unsigned char)(gf_mult(0x03,s0) ^ s1 ^ s2 ^ gf_mult(0x02,s3)));
+        #endif
     }
 
     // Copy the temporary state back to the original state
     for (int i = 0; i < 4; i++) {
         state[i] = temp[i];
     }
+}
+
+/*
+ * This function calculates the SBox value on the fly rather than using the table and performing a lookup
+ */
+void SubBytesCalculated (uint8_t StateArray[]) {
+    for (int i = 0; i < 4; ++i) { // Each element of the array is a 32-bit word
+        // Extract each byte from the word and perform the affine transformation
+        uint8_t b0 = affine_transform((uint8_t)(StateArray[i] >> 24)); // Most significant byte
+        uint8_t b1 = affine_transform((uint8_t)(StateArray[i] >> 16));
+        uint8_t b2 = affine_transform((uint8_t)(StateArray[i] >> 8));
+        uint8_t b3 = affine_transform((uint8_t)(StateArray[i])); // Least significant byte
+
+        // Combine the transformed bytes back into the 32-bit word
+        StateArray[i] = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16) | ((uint32_t)b2 << 8) | b3;
+    }
+}
+
+uint8_t affine_transform(uint8_t byte) {
+    uint8_t bo = gf_inv(byte); // Perform the multiplicative inverse.
+    uint8_t bits[8];
+    uint8_t bo_prime = 0;
+    uint8_t c[8] = {1, 1, 0, 0, 0, 1, 1, 0}; // Constant vector c
+
+    for (int i = 0; i < 8; ++i) {
+        bits[i] = (bo >> i) & 0x01;
+    }
+    bo_prime |= bits[0] ^ bits[4] ^ bits[5] ^ bits[6] ^ bits[7] ^ c[0];
+    bo_prime |= (bits[1] ^ bits[5] ^ bits[6] ^ bits[7] ^ bits[0] ^ c[1]) << 1;
+    bo_prime |= (bits[2] ^ bits[6] ^ bits[7] ^ bits[0] ^ bits[1] ^ c[2]) << 2;
+    bo_prime |= (bits[3] ^ bits[7] ^ bits[0] ^ bits[1] ^ bits[2] ^ c[3]) << 3;
+    bo_prime |= (bits[4] ^ bits[0] ^ bits[1] ^ bits[2] ^ bits[3] ^ c[4]) << 4;
+    bo_prime |= (bits[5] ^ bits[1] ^ bits[2] ^ bits[3] ^ bits[4] ^ c[5]) << 5;
+    bo_prime |= (bits[6] ^ bits[2] ^ bits[3] ^ bits[4] ^ bits[5] ^ c[6]) << 6;
+    bo_prime |= (bits[7] ^ bits[3] ^ bits[4] ^ bits[5] ^ bits[6] ^ c[7]) << 7;
+
+    return bo_prime;
 }
 
 
@@ -286,4 +281,61 @@ void InvMixColumns (uint8_t StateArray[][4])
 	memcpy(StateArray, StateArrayTmp, 4 * 4 * sizeof(uint8_t));
 }
 
+void ExpandKey (uint8_t Key[][4], uint8_t ExpandedKey[][4][4])
+{
+	uint8_t TempKey[4][4];
+	memset(&TempKey, 0, 4*4*sizeof (uint8_t));
+	//bzero(TempKey, 4*4*sizeof (uint8_t));
+	uint8_t TempKeyCol[4];
+	memset(&TempKeyCol, 0, 4*sizeof (uint8_t));
+	//bzero(TempKeyCol, 4*sizeof (uint8_t));
+	int i,j;
+
+	// Encryption Key copied to Expanded Key [0]
+	memcpy(ExpandedKey[0], Key, 4 * 4 * sizeof(uint8_t));
+
+	for (i=1; i<11; i++){
+		// W3 copied to TempKeyRow with rotation
+		TempKeyCol[0]=ExpandedKey[i-1][1][3];
+		TempKeyCol[1]=ExpandedKey[i-1][2][3];
+		TempKeyCol[2]=ExpandedKey[i-1][3][3];
+		TempKeyCol[3]=ExpandedKey[i-1][0][3];
+
+		// sBox applied
+		#ifdef SBOX_LUT
+		TempKeyCol[0]=SBox[ TempKeyCol[0] ];
+		TempKeyCol[1]=SBox[ TempKeyCol[1] ];
+		TempKeyCol[2]=SBox[ TempKeyCol[2] ];
+		TempKeyCol[3]=SBox[ TempKeyCol[3] ];
+		#else 
+		TempKeyCol[0]= affine_transform( TempKeyCol[0] );
+		TempKeyCol[1]= affine_transform( TempKeyCol[1] );
+		TempKeyCol[2]= affine_transform( TempKeyCol[2] );
+		TempKeyCol[3]= affine_transform( TempKeyCol[3] );
+		#endif
+		// Rcon applied
+		TempKeyCol[0]^=RCon[i-1];
+
+		// XOR
+		for(j=0; j<4; j++){
+			TempKeyCol[0] = TempKeyCol[0]^ExpandedKey[i-1][0][j];
+			TempKeyCol[1] = TempKeyCol[1]^ExpandedKey[i-1][1][j];
+			TempKeyCol[2] = TempKeyCol[2]^ExpandedKey[i-1][2][j];
+			TempKeyCol[3] = TempKeyCol[3]^ExpandedKey[i-1][3][j];
+
+			ExpandedKey[i][0][j] = TempKeyCol[0];
+			ExpandedKey[i][1][j] = TempKeyCol[1];
+			ExpandedKey[i][2][j] = TempKeyCol[2];
+			ExpandedKey[i][3][j] = TempKeyCol[3];
+		}
+	}
+}
+
+void AddRoundKey (uint8_t Key[][4], uint8_t StateArray[][4])
+{
+	int i,j;
+	for(i=0; i<4; i++)
+		for(j=0; j<4; j++)
+			StateArray[i][j] ^= Key[i][j];
+}
 

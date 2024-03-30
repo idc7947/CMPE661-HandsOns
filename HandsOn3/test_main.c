@@ -47,7 +47,7 @@ void ShiftRows (uint8_t StateArray[][4]);
 void MixColumns (uint8_t StateArray[][4]);
 
 void SubBytesCalculated (uint8_t StateArray[][4]);
-uint8_t affine_transform(uint8_t byte);
+uint8_t affine_transform(uint8_t bi);
  
 void InvSubBytes (uint8_t StateArray[][4]);
 void InvShiftRows (uint8_t StateArray[][4]);
@@ -243,21 +243,27 @@ void expand_to_2D(uint32_t src[4], uint8_t dst[4][4]) {
     }
 }
 
-uint8_t affine_transform(uint8_t byte) {
-    uint8_t constant_c = 0x63;  // Constant for affine transformation
-    uint8_t result = 0;
+uint8_t affine_transform(uint8_t bi) {
+    uint8_t bo = gf_inv(bi); // Perform the multiplicative inverse.
+    uint8_t bits[8];
+    uint8_t bo_prime = 0;
+    uint8_t c[8] = {1, 1, 0, 0, 0, 1, 1, 0}; // Constant vector c
 
     for (int i = 0; i < 8; ++i) {
-        result |= (((byte >> i) & 1) ^
-                   ((byte >> ((i+4) % 8)) & 1) ^
-                   ((byte >> ((i+5) % 8)) & 1) ^
-                   ((byte >> ((i+6) % 8)) & 1) ^
-                   ((byte >> ((i+7) % 8)) & 1) ^
-                   ((constant_c >> i) & 1)) << i;
+        bits[i] = (bo >> i) & 0x01;
     }
+    bo_prime |= bits[0] ^ bits[4] ^ bits[5] ^ bits[6] ^ bits[7] ^ c[0];
+    bo_prime |= (bits[1] ^ bits[5] ^ bits[6] ^ bits[7] ^ bits[0] ^ c[1]) << 1;
+    bo_prime |= (bits[2] ^ bits[6] ^ bits[7] ^ bits[0] ^ bits[1] ^ c[2]) << 2;
+    bo_prime |= (bits[3] ^ bits[7] ^ bits[0] ^ bits[1] ^ bits[2] ^ c[3]) << 3;
+    bo_prime |= (bits[4] ^ bits[0] ^ bits[1] ^ bits[2] ^ bits[3] ^ c[4]) << 4;
+    bo_prime |= (bits[5] ^ bits[1] ^ bits[2] ^ bits[3] ^ bits[4] ^ c[5]) << 5;
+    bo_prime |= (bits[6] ^ bits[2] ^ bits[3] ^ bits[4] ^ bits[5] ^ c[6]) << 6;
+    bo_prime |= (bits[7] ^ bits[3] ^ bits[4] ^ bits[5] ^ bits[6] ^ c[7]) << 7;
 
-    return result;
+    return bo_prime;
 }
+
 
 void AES_printf (uint8_t AES_StateArray[][4])
 {

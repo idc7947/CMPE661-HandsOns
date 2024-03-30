@@ -53,6 +53,8 @@ void SubBytesAndShiftRows1D(uint32_t *state);
 void MixColumns1D(uint32_t *state);
 void AddRoundKey1D(uint32_t Key[4], uint32_t StateArray[4]);
 void expand_to_2D(uint32_t src[4], uint8_t dst[4][4]);
+uint8_t affine_transform(uint8_t byte);
+void SubBytesCalculated (uint8_t StateArray[]);
 
 /**********************************************************************
  * Functions for AES decryption
