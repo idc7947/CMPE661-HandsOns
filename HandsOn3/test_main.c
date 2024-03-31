@@ -130,9 +130,38 @@ int main()
         AES_printf(StateArray);
     }
     */
-    for (uint8_t i = 0; i < 255; i++) {
-        printf("LUT = 0x%02x, Affine = 0x%02x \r\n", SBox[i], affine_transform(i) );
+    uint32_t T0[256], T1[256], T2[256], T3[256];
+
+for (int i = 0; i < 256; i++) {
+    T0[i] = ((uint32_t)xTime02[(uint32_t)SBox[i]] << 24) | ((uint32_t)SBox[i] << 16) | ((uint32_t)SBox[i] << 8) | (uint32_t)xTime03[(uint32_t)SBox[i]];
+    T1[i] = ((uint32_t)xTime03[(uint32_t)SBox[i]] << 24) | ((uint32_t)xTime02[(uint32_t)SBox[i]] << 16) | ((uint32_t)SBox[i] << 8) | (uint32_t)SBox[i];
+    T2[i] = ((uint32_t)SBox[i] << 24) | ((uint32_t)xTime03[(uint32_t)SBox[i]] << 16) | ((uint32_t)xTime02[(uint32_t)SBox[i]] << 8) | (uint32_t)SBox[i];
+    T3[i] = ((uint32_t)SBox[i] << 24) | ((uint32_t)SBox[i] << 16) | ((uint32_t)xTime03[(uint32_t)SBox[i]] << 8) | (uint32_t)xTime02[SBox[i]];
+}
+
+// Print the T-Boxes in hexadecimal form
+for (int j = 0; j < 4; j++) {
+    printf("uint32_t T%d[256] = {\r\n", j);
+    for (int i = 0; i < 256; i++) {
+        switch (j) {
+            case 0:
+                printf("0x%08x, ", T0[i]);
+                break;
+            case 1:
+                printf("0x%08x, ", T1[i]);
+                break;
+            case 2:
+                printf("0x%08x, ", T2[i]);
+                break;
+            case 3:
+                printf("0x%08x, ", T3[i]);
+                break;
+        }
+        if ((i + 1) % 8 == 0) printf("\r\n");
     }
+    printf("};\r\n\r\n");
+}
+
         //printf("0x%02x, ", gf_mult(0x03,255));
 
     /*
