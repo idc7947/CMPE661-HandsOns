@@ -48,6 +48,7 @@ void AddRoundKey (uint8_t Key[][4], uint8_t StateArray[][4]);
  * Functions for AES encryption
  **********************************************************************/
 
+void AESRound(uint32_t RoundKey[4], uint32_t StateArray[4]);
 void collapse_to_1D(uint8_t src[4][4], uint32_t dst[4]);
 void SubBytesAndShiftRows1D(uint32_t *state);
 void MixColumns1D(uint32_t *state);

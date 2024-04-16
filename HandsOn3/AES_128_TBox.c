@@ -2,6 +2,7 @@
 #include "AES_128_1D.h"
 #include "gf28.h"
 #include "multiplication_tables.c"
+#include "TBox.c"
 
 const uint8_t SBox[256] = {
  // 0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
@@ -99,6 +100,24 @@ void AddRoundKey1D(uint32_t Key[4], uint32_t StateArray[4]) {
 }
 
 
+void AESRound(uint32_t Key[4], uint32_t StateArray[4]){
+    uint32_t tempState[4] = {0};
+    for (int i = 0; i < 4; i++) { // Process each column
+        // Extract the individual bytes from the state
+        uint8_t a0 = (uint8_t)(StateArray[i] >> 24); // Most significant byte
+        uint8_t a1 = (uint8_t)(StateArray[(i + 1) % 4] >> 16);
+        uint8_t a2 = (uint8_t)(StateArray[(i + 2) % 4] >> 8);
+        uint8_t a3 = (uint8_t)(StateArray[(i + 3) % 4]); // Least significant byte
+
+        // Compute the new column value using the T-Boxes
+        tempState[i] = T0[a0] ^ T1[a1] ^ T2[a2] ^ T3[a3] ^ Key[i];
+    }
+
+    // Copy the new column values back to the state array
+    for (int i = 0; i < 4; i++) {
+        StateArray[i] = tempState[i];
+    }
+}
 
 
 
