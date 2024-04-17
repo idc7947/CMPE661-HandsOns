@@ -49,6 +49,7 @@ int main()
 	return 0;
 }
 
+
 void testMult(void) {
     gf128 x, y, z, expected;
     // Test Case 1
