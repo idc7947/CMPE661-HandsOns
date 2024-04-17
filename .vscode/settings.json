@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "aes_128.h": "c",
-        "strings.h": "c"
+        "strings.h": "c",
+        "aes_128_1d.h": "c"
     }
 }

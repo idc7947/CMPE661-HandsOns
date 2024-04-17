@@ -7,6 +7,8 @@
 //#include "platform.h"
 
 #include "gf2128.h"
+#include "AESGCM.h"
+#include "AES_128_1D.h"
 
 //============================================================================
 
@@ -23,14 +25,22 @@ uint8_t PlainText[4][4]  = {  {0x32, 0x88, 0x31, 0xe0},
 		{0x43, 0x5a, 0x31, 0x37},
 		{0xf6, 0x30, 0x98, 0x07},
 		{0xa8, 0x8d, 0xa2, 0x34} };
+
+uint8_t example[4][4]  = {  
+       {0x01, 0x89, 0x76, 0xFE},
+		{0x23, 0xAB, 0x54, 0xDC},
+		{0x45, 0xCD, 0x32, 0xBA},
+		{0x67, 0xEF, 0x10, 0x98} 
+};
 // To set all the bytes in a block of memory to a particular value, use memset().
 // The function prototype is void * memset(void *dest, int c, size_t count);
 void testMult(void);
+void testColumns(void);
 
 
 int main()
 {
-    /*
+/*
 	//init_platform();
 
 	xil_printf("\n\n\n");
@@ -44,8 +54,29 @@ int main()
 
 	xil_printf("-- Exiting main() --\r\n");
 	//cleanup_platform();
-    */
+*/
+   // Test Case 3
+   AES_GCM_In TC3_in;
+   AES_GCM_Out TC3_out;
+   from_hex("feffe9928665731c6d6a8f9467308308", TC3_in.K);
+   TC3_in.KLength = 128;
+   uint32_t IV_in[4] = {0xcafebabe, 0xfacedbad, 0xdecaf888, 0x0000000};
+   TC3_in.IV[0] = IV_in[0];
+   TC3_in.IV[1] = IV_in[1];
+   TC3_in.IV[2] = IV_in[2];
+   TC3_in.IV[3] = IV_in[3];
+   TC3_in.IVLength = 96;
+   uint32_t P_in[16];
+   from_hex_512("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255", P_in);
+   for (int i = 0; i < 16; i++) {
+    TC3_in.P[i] = P_in[i];
+   }
+   TC3_in.PLength = 512;
+   TC3_in.ALength = 0;
 
+   EncryptionGCM(TC3_in, TC3_out);
+
+    //gcc main.c gf2128.c AESGCM.c AES_128_1D.c gf28.c multiplication_tables.c -o test
 	return 0;
 }
 
@@ -81,6 +112,20 @@ void testMult(void) {
     print_gf128(z);
     printf("Expected Z3: ");
     print_gf128(expected);
+}
+
+void testColumns(void) {
+    gf128 example1D;
+   uint8_t example2D[4][4];
+
+   collapse_to_1D(example, example1D);
+   print_gf128(example1D);
+   zero_gf128(example1D);
+   from_hex("0123456789ABCDEF76543210FEDCBA98", example1D);
+   print_gf128(example1D);
+   expand_to_2D(example1D, example2D);
+   AES_printf(example2D);
+   AES_printf(example);
 }
 
 

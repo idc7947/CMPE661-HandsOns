@@ -5,30 +5,32 @@
 #include "gf2128.h"
 
 typedef struct AES_GCM_In {
-    uint8_t K[256];    // Key
-    uint8_t KLength;
+    uint32_t K[4];    // Key
+    uint16_t KLength;
 
-    uint8_t IV[256];   // Initialization Vector
-    uint8_t IVLength;  // Usually 96 bits
+    uint32_t IV[4];   // Initialization Vector
+    uint16_t IVLength;  // Usually 96 bits
 
-    uint8_t P[256];    // Plain text
-    uint8_t PLength;
+    uint32_t P[16];    // Plain text
+    uint16_t PLength;
 
-    uint8_t A[256];    // AAD
-    uint8_t ALength;
+    uint32_t A[16];    // AAD
+    uint16_t ALength;
 } AES_GCM_In;
 
 typedef struct AES_GCM_Out {
-    uint8_t C[256];    // Cipher Text
-    uint8_t CLength;   // Equal to PLength
+    uint32_t C[16];    // Cipher Text
+    uint16_t CLength;   // Equal to PLength
 
-    uint8_t T[256];    // Tag
-    uint8_t TLength;   // Between 64 and 128 bits, denoted as 't'
+    uint32_t T[256];    // Tag
+    uint16_t TLength;   // Between 64 and 128 bits, denoted as 't'
 } AES_GCM_Out;
 
 void EncryptionGCM(AES_GCM_In input, AES_GCM_Out output);
 void GHASH(void);
 void CreateHashKey(void);
+
+void encryptNoBullshit(void);
 
 
 

@@ -87,6 +87,13 @@ void from_hex(const char *hex, gf128 a) {
     }
 }
 
+void from_hex_512(const char *hex, uint32_t a[16]) {
+    // Parse the hex string into the array, assuming the input hex string is exactly 32 characters long
+    for (int i = 0; i < GF128_NUM_WORDS; i++) {
+        sscanf(hex + 8 * i, "%8x", &a[i]);
+    }
+}
+
 
 
 // Function to print a gf128 element as a hex string.

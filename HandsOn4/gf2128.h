@@ -17,6 +17,7 @@ void gf128_mul(gf128 a, gf128 b, gf128 y);
 
 // String ops for input
 void from_hex(const char *hex, gf128 a);
+void from_hex_512(const char *hex, uint32_t a[16]);
 
 // Prints MSB to LSB order
 void print_gf128(const gf128 a);
