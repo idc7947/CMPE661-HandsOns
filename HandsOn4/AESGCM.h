@@ -27,8 +27,6 @@ typedef struct AES_GCM_Out {
 } AES_GCM_Out;
 
 void EncryptionGCM(AES_GCM_In input, AES_GCM_Out output);
-void GHASH(void);
-void CreateHashKey(void);
 
 void encryptNoBullshit(void);
 

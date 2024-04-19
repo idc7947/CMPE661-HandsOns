@@ -40,50 +40,50 @@ void testColumns(void);
 
 int main()
 {
-/*
-	//init_platform();
-
-	xil_printf("\n\n\n");
-	xil_printf("-- Starting AES software test based on FIPS-197 (Appendix B)\r\n\n");
-
-	encryptNoBullshit();
-
-	//decrypt();
-
-	xil_printf("**********************************************\r\n");
-
-	xil_printf("-- Exiting main() --\r\n");
-	//cleanup_platform();
-*/
-   // Test Case 3
-   AES_GCM_In TC3_in;
-   AES_GCM_Out TC3_out;
-   from_hex("feffe9928665731c6d6a8f9467308308", TC3_in.K);
-   TC3_in.KLength = 128;
-   from_hex("cafebabefacedbaddecaf88800000000", TC3_in.IV);
-   TC3_in.IVLength = 96;
-   uint32_t tempWord[4];
-   from_hex("d9313225f88406e5a55909c5aff5269a", tempWord);
-    memcpy(TC3_in.P[0], tempWord, sizeof(gf128));
+    //init_platform();
+    //testMult();
+    // Test Case 3
+    AES_GCM_In TC_in;
+    AES_GCM_Out TC_out;
+    printf("---------------TEST CASE 3---------------\r\n");
+    from_hex("feffe9928665731c6d6a8f9467308308", TC_in.K);
+    TC_in.KLength = 128;
+    from_hex("cafebabefacedbaddecaf88800000000", TC_in.IV);
+    TC_in.IVLength = 96;
+    uint32_t tempWord[4];
+    from_hex("d9313225f88406e5a55909c5aff5269a", tempWord);
+    memcpy(TC_in.P[0], tempWord, sizeof(gf128));
     from_hex("86a7a9531534f7da2e4c303d8a318a72", tempWord);
-    memcpy(TC3_in.P[1], tempWord, sizeof(gf128));
+    memcpy(TC_in.P[1], tempWord, sizeof(gf128));
     from_hex("1c3c0c95956809532fcf0e2449a6b525", tempWord);
-    memcpy(TC3_in.P[2], tempWord, sizeof(gf128));
+    memcpy(TC_in.P[2], tempWord, sizeof(gf128));
     from_hex("b16aedf5aa0de657ba637b391aafd255", tempWord);
-    memcpy(TC3_in.P[3], tempWord, sizeof(gf128));
+    memcpy(TC_in.P[3], tempWord, sizeof(gf128));
+    TC_in.PLength = 512;
+    TC_in.ALength = 0;
+    for (int i = 0; i < 4; i++) zero_gf128(TC_in.A[i]);
+    EncryptionGCM(TC_in, TC_out);
+    printf("-------------END TEST CASE 3-------------\r\n");
 
-    // Print to verify
-    for (int i = 0; i < 4; i++) {
-        print_gf128(TC3_in.P[i]);
-        zero_gf128(TC3_in.A[i]);
-    }
-   TC3_in.PLength = 512;
-   TC3_in.ALength = 0;
 
-   EncryptionGCM(TC3_in, TC3_out);
+    // Test Case 4
+    printf("---------------TEST CASE 4---------------\r\n");
+    TC_in.P[3][3] = 0; // The only change besides A lol
+    TC_in.ALength = 160;
+    TC_in.PLength = 480;
+    from_hex("feedfacedeadbeeffeedfacedeadbeef", tempWord);
+    memcpy(TC_in.A[0], tempWord, sizeof(gf128));
+    from_hex("abaddad2000000000000000000000000", tempWord);
+    memcpy(TC_in.A[1], tempWord, sizeof(gf128));
+    EncryptionGCM(TC_in, TC_out);
+    printf("-------------END TEST CASE 4-------------\r\n");
 
+
+
+
+    //cleanup_platform();
     //gcc main.c gf2128.c AESGCM.c AES_128_1D.c gf28.c multiplication_tables.c -o test
-	return 0;
+    return 0;
 }
 
 
