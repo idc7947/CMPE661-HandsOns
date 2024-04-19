@@ -60,17 +60,23 @@ int main()
    AES_GCM_Out TC3_out;
    from_hex("feffe9928665731c6d6a8f9467308308", TC3_in.K);
    TC3_in.KLength = 128;
-   uint32_t IV_in[4] = {0xcafebabe, 0xfacedbad, 0xdecaf888, 0x0000000};
-   TC3_in.IV[0] = IV_in[0];
-   TC3_in.IV[1] = IV_in[1];
-   TC3_in.IV[2] = IV_in[2];
-   TC3_in.IV[3] = IV_in[3];
+   from_hex("cafebabefacedbaddecaf88800000000", TC3_in.IV);
    TC3_in.IVLength = 96;
-   uint32_t P_in[16];
-   from_hex_512("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255", P_in);
-   for (int i = 0; i < 16; i++) {
-    TC3_in.P[i] = P_in[i];
-   }
+   uint32_t tempWord[4];
+   from_hex("d9313225f88406e5a55909c5aff5269a", tempWord);
+    memcpy(TC3_in.P[0], tempWord, sizeof(gf128));
+    from_hex("86a7a9531534f7da2e4c303d8a318a72", tempWord);
+    memcpy(TC3_in.P[1], tempWord, sizeof(gf128));
+    from_hex("1c3c0c95956809532fcf0e2449a6b525", tempWord);
+    memcpy(TC3_in.P[2], tempWord, sizeof(gf128));
+    from_hex("b16aedf5aa0de657ba637b391aafd255", tempWord);
+    memcpy(TC3_in.P[3], tempWord, sizeof(gf128));
+
+    // Print to verify
+    for (int i = 0; i < 4; i++) {
+        print_gf128(TC3_in.P[i]);
+        zero_gf128(TC3_in.A[i]);
+    }
    TC3_in.PLength = 512;
    TC3_in.ALength = 0;
 
